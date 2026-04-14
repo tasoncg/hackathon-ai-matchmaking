@@ -1,0 +1,21 @@
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 8080
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+COPY ["src/MatchBall.Api/MatchBall.Api.csproj", "MatchBall.Api/"]
+COPY ["src/MatchBall.Application/MatchBall.Application.csproj", "MatchBall.Application/"]
+COPY ["src/MatchBall.Domain/MatchBall.Domain.csproj", "MatchBall.Domain/"]
+COPY ["src/MatchBall.Infrastructure/MatchBall.Infrastructure.csproj", "MatchBall.Infrastructure/"]
+RUN dotnet restore "MatchBall.Api/MatchBall.Api.csproj"
+
+COPY src/ .
+WORKDIR "/src/MatchBall.Api"
+RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
+
+FROM base AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+ENV ASPNETCORE_URLS=http://+:8080
+ENTRYPOINT ["dotnet", "MatchBall.Api.dll"]
