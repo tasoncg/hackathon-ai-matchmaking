@@ -17,4 +17,7 @@ public class Team
     public ICollection<Match> HomeMatches { get; set; } = new List<Match>();
     public ICollection<Match> AwayMatches { get; set; } = new List<Match>();
     public ICollection<BehaviorLog> BehaviorLogs { get; set; } = new List<BehaviorLog>();
+    public ICollection<TeamScheduleSlot> ScheduleSlots { get; set; } = new List<TeamScheduleSlot>();
+    public ICollection<MatchInvitation> SentInvitations { get; set; } = new List<MatchInvitation>();
+    public ICollection<MatchInvitation> ReceivedInvitations { get; set; } = new List<MatchInvitation>();
 }

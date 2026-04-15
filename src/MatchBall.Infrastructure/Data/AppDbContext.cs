@@ -15,6 +15,9 @@ public class AppDbContext : DbContext
     public DbSet<BehaviorLog> BehaviorLogs => Set<BehaviorLog>();
     public DbSet<Field> Fields => Set<Field>();
     public DbSet<FieldTimeSlot> FieldTimeSlots => Set<FieldTimeSlot>();
+    public DbSet<TeamScheduleSlot> TeamScheduleSlots => Set<TeamScheduleSlot>();
+    public DbSet<MatchInvitation> MatchInvitations => Set<MatchInvitation>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -122,6 +125,69 @@ public class AppDbContext : DbContext
                 .WithMany(f => f.TimeSlots)
                 .HasForeignKey(fts => fts.FieldId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // TeamScheduleSlot
+        modelBuilder.Entity<TeamScheduleSlot>(e =>
+        {
+            e.HasKey(s => s.Id);
+            e.Property(s => s.FieldName).HasMaxLength(200);
+            e.Property(s => s.Notes).HasMaxLength(500);
+            e.HasOne(s => s.Team)
+                .WithMany(t => t.ScheduleSlots)
+                .HasForeignKey(s => s.TeamId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(s => s.Field)
+                .WithMany()
+                .HasForeignKey(s => s.FieldId)
+                .OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(s => s.Match)
+                .WithMany()
+                .HasForeignKey(s => s.MatchId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // MatchInvitation
+        modelBuilder.Entity<MatchInvitation>(e =>
+        {
+            e.HasKey(i => i.Id);
+            e.Property(i => i.Location).HasMaxLength(300);
+            e.Property(i => i.Message).HasMaxLength(500);
+            e.HasOne(i => i.FromTeam)
+                .WithMany(t => t.SentInvitations)
+                .HasForeignKey(i => i.FromTeamId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(i => i.ToTeam)
+                .WithMany(t => t.ReceivedInvitations)
+                .HasForeignKey(i => i.ToTeamId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(i => i.FromUser)
+                .WithMany()
+                .HasForeignKey(i => i.FromUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(i => i.Field)
+                .WithMany()
+                .HasForeignKey(i => i.FieldId)
+                .OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(i => i.Match)
+                .WithMany()
+                .HasForeignKey(i => i.MatchId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Notification
+        modelBuilder.Entity<Notification>(e =>
+        {
+            e.HasKey(n => n.Id);
+            e.Property(n => n.Type).HasMaxLength(50).IsRequired();
+            e.Property(n => n.Title).HasMaxLength(200).IsRequired();
+            e.Property(n => n.Message).HasMaxLength(1000).IsRequired();
+            e.Property(n => n.Link).HasMaxLength(300);
+            e.HasOne(n => n.User)
+                .WithMany(u => u.Notifications)
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(n => new { n.UserId, n.Read });
         });
     }
 }

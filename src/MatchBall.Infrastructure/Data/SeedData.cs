@@ -8,9 +8,13 @@ public static class SeedData
 {
     public static async Task InitializeAsync(AppDbContext db)
     {
-        if (await db.Users.AnyAsync()) return; // Already seeded
-
         var random = new Random(42);
+
+        if (await db.Users.AnyAsync())
+        {
+            await SeedSchedulesIfMissingAsync(db, random);
+            return;
+        }
 
         var firstNames = new[] { "Nguyen", "Tran", "Le", "Pham", "Hoang", "Vu", "Vo", "Dang", "Bui", "Do",
             "Ho", "Ngo", "Duong", "Ly", "Truong", "Lam", "Luong", "Dinh", "Mai", "Doan" };
@@ -156,6 +160,35 @@ public static class SeedData
         }
         await db.SaveChangesAsync();
 
+        // Create weekly schedule slots for each team: 3 available + 1-2 booked
+        var fieldList = db.Fields.ToList();
+        var scheduleDays = new[] { DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday };
+        var scheduleHours = new[] { (18, 20), (20, 22), (16, 18) };
+
+        for (int t = 0; t < 5; t++)
+        {
+            var chosen = scheduleDays.OrderBy(_ => random.Next()).Take(4).ToList();
+            for (int d = 0; d < chosen.Count; d++)
+            {
+                var (s, e) = scheduleHours[d % scheduleHours.Length];
+                var field = fieldList[random.Next(fieldList.Count)];
+                var bookedCount = random.Next(1, 3); // 1-2 booked per team
+                db.TeamScheduleSlots.Add(new TeamScheduleSlot
+                {
+                    Id = Guid.NewGuid(),
+                    TeamId = teams[t].Id,
+                    DayOfWeek = chosen[d],
+                    StartHour = s,
+                    EndHour = e,
+                    FieldId = field.Id,
+                    FieldName = field.Name,
+                    Status = d < bookedCount ? ScheduleSlotStatus.Booked : ScheduleSlotStatus.Available,
+                    Notes = d < bookedCount ? "Weekly training / friendly" : null
+                });
+            }
+        }
+        await db.SaveChangesAsync();
+
         // Create some past matches
         for (int i = 0; i < 8; i++)
         {
@@ -184,6 +217,42 @@ public static class SeedData
                 SubmittedBy = teams[a].Id,
                 Confirmed = true
             });
+        }
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task SeedSchedulesIfMissingAsync(AppDbContext db, Random random)
+    {
+        if (await db.TeamScheduleSlots.AnyAsync()) return;
+
+        var teams = await db.Teams.ToListAsync();
+        var fieldList = await db.Fields.ToListAsync();
+        if (teams.Count == 0 || fieldList.Count == 0) return;
+
+        var scheduleDays = new[] { DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday };
+        var scheduleHours = new[] { (18, 20), (20, 22), (16, 18) };
+
+        foreach (var team in teams)
+        {
+            var chosen = scheduleDays.OrderBy(_ => random.Next()).Take(4).ToList();
+            for (int d = 0; d < chosen.Count; d++)
+            {
+                var (s, e) = scheduleHours[d % scheduleHours.Length];
+                var field = fieldList[random.Next(fieldList.Count)];
+                var bookedCount = random.Next(1, 3);
+                db.TeamScheduleSlots.Add(new TeamScheduleSlot
+                {
+                    Id = Guid.NewGuid(),
+                    TeamId = team.Id,
+                    DayOfWeek = chosen[d],
+                    StartHour = s,
+                    EndHour = e,
+                    FieldId = field.Id,
+                    FieldName = field.Name,
+                    Status = d < bookedCount ? ScheduleSlotStatus.Booked : ScheduleSlotStatus.Available,
+                    Notes = d < bookedCount ? "Weekly training / friendly" : null
+                });
+            }
         }
         await db.SaveChangesAsync();
     }

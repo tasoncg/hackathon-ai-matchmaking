@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"Get-Process -Id 17024 -ErrorAction SilentlyContinue | Stop-Process -Force; Write-Host done\")",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet ef:*)",
+      "Bash(dotnet run:*)",
+      "Bash(curl -s -X POST http://localhost:5155/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"player1@matchball.dev\",\"password\":\"Password123!\"}')",
+      "Bash(powershell -Command \"Get-Process -Name MatchBall.Api -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Seconds 1; Write-Host done\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5155/api/teams)",
+      "Bash(curl -s -o /dev/null -w \"api:%{http_code}\\\\n\" http://localhost:5155/api/teams)",
+      "Bash(curl -s -o /dev/null -w \"web:%{http_code}\\\\n\" http://localhost:5173)"
+    ]
+  }
+}

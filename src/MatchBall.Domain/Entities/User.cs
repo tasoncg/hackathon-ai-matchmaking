@@ -24,4 +24,5 @@ public class User
     public ICollection<TeamMember> TeamMembers { get; set; } = new List<TeamMember>();
     public ICollection<Team> CaptainedTeams { get; set; } = new List<Team>();
     public ICollection<Field> OwnedFields { get; set; } = new List<Field>();
+    public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 }

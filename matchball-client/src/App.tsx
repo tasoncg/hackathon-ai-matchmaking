@@ -10,6 +10,7 @@ import TeamDetailPage from './pages/TeamDetailPage';
 import MatchesPage from './pages/MatchesPage';
 import ProfilePage from './pages/ProfilePage';
 import FieldsPage from './pages/FieldsPage';
+import InvitationDetailPage from './pages/InvitationDetailPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuthStore();
@@ -35,6 +36,7 @@ function AppRoutes() {
         <Route path="/matches" element={<ProtectedRoute><MatchesPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/fields" element={<ProtectedRoute><FieldsPage /></ProtectedRoute>} />
+        <Route path="/invitations/:id" element={<ProtectedRoute><InvitationDetailPage /></ProtectedRoute>} />
       </Routes>
     </div>
   );

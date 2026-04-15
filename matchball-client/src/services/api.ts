@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AuthResponse, Team, Match, MatchSuggestion, Field, FieldTimeSlot, User } from '../types';
+import type { AuthResponse, Team, Match, MatchSuggestion, Field, FieldTimeSlot, User, TeamScheduleSlot, MatchInvitation, Notification } from '../types';
 
 const api = axios.create({
   baseURL: '/api',
@@ -71,6 +71,44 @@ export const fieldsApi = {
 export const usersApi = {
   getAll: () => api.get<User[]>('/users'),
   getById: (id: string) => api.get<User>(`/users/${id}`),
+};
+
+// Schedule
+export const scheduleApi = {
+  getByTeam: (teamId: string) => api.get<TeamScheduleSlot[]>(`/teams/${teamId}/schedule`),
+  create: (teamId: string, data: {
+    dayOfWeek: string | number; startHour: number; endHour: number;
+    fieldId?: string | null; fieldName?: string | null;
+    status: 'Available' | 'Booked'; notes?: string | null;
+  }) => api.post<TeamScheduleSlot>(`/teams/${teamId}/schedule`, data),
+  update: (teamId: string, slotId: string, data: {
+    dayOfWeek: string | number; startHour: number; endHour: number;
+    fieldId?: string | null; fieldName?: string | null;
+    status: 'Available' | 'Booked'; notes?: string | null;
+  }) => api.put<TeamScheduleSlot>(`/teams/${teamId}/schedule/${slotId}`, data),
+  remove: (teamId: string, slotId: string) =>
+    api.delete(`/teams/${teamId}/schedule/${slotId}`),
+};
+
+// Invitations
+export const invitationsApi = {
+  getById: (id: string) => api.get<MatchInvitation>(`/invitations/${id}`),
+  incoming: (teamId: string) => api.get<MatchInvitation[]>(`/invitations/incoming/${teamId}`),
+  outgoing: (teamId: string) => api.get<MatchInvitation[]>(`/invitations/outgoing/${teamId}`),
+  create: (data: {
+    fromTeamId: string; toTeamId: string; proposedTime: string;
+    location: string; fieldId?: string | null; message?: string | null;
+  }) => api.post<MatchInvitation>('/invitations', data),
+  accept: (id: string) => api.post<MatchInvitation>(`/invitations/${id}/accept`),
+  reject: (id: string) => api.post<MatchInvitation>(`/invitations/${id}/reject`),
+};
+
+// Notifications
+export const notificationsApi = {
+  getAll: () => api.get<Notification[]>('/notifications'),
+  unreadCount: () => api.get<number>('/notifications/unread-count'),
+  markRead: (id: string) => api.post(`/notifications/${id}/read`),
+  markAllRead: () => api.post('/notifications/read-all'),
 };
 
 export default api;

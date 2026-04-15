@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
   const { user, logout } = useAuthStore();
@@ -35,6 +36,7 @@ export default function Navbar() {
           </div>
           {user && (
             <div className="flex items-center gap-4">
+              <NotificationBell />
               <Link to="/profile" className="text-sm text-gray-600 hover:text-gray-900">
                 {user.name}
               </Link>

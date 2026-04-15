@@ -14,6 +14,8 @@ export default function DashboardPage() {
   const [recentMatches, setRecentMatches] = useState<Match[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [finding, setFinding] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -22,12 +24,8 @@ export default function DashboardPage() {
         setMyTeams(teams);
         if (teams.length > 0) {
           setSelectedTeam(teams[0].id);
-          const [sugRes, matchRes] = await Promise.all([
-            matchmakingApi.getBestMatches(teams[0].id),
-            matchesApi.getByTeam(teams[0].id),
-          ]);
-          setSuggestions(sugRes.data);
-          setRecentMatches(matchRes.data.slice(0, 5));
+          const { data } = await matchesApi.getByTeam(teams[0].id);
+          setRecentMatches(data.slice(0, 5));
         }
       } catch (err) {
         console.error(err);
@@ -40,18 +38,28 @@ export default function DashboardPage() {
 
   const handleTeamChange = async (teamId: string) => {
     setSelectedTeam(teamId);
-    setLoading(true);
+    setSuggestions([]);
+    setHasFetched(false);
     try {
-      const [sugRes, matchRes] = await Promise.all([
-        matchmakingApi.getBestMatches(teamId),
-        matchesApi.getByTeam(teamId),
-      ]);
-      setSuggestions(sugRes.data);
-      setRecentMatches(matchRes.data.slice(0, 5));
+      const { data } = await matchesApi.getByTeam(teamId);
+      setRecentMatches(data.slice(0, 5));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleFindMatch = async () => {
+    if (!selectedTeam) return;
+    setFinding(true);
+    setSuggestions([]);
+    try {
+      const { data } = await matchmakingApi.getBestMatches(selectedTeam);
+      setSuggestions(data);
+      setHasFetched(true);
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      setFinding(false);
     }
   };
 
@@ -73,19 +81,40 @@ export default function DashboardPage() {
         <p className="text-gray-500 mt-1">Here's your matchmaking dashboard</p>
       </div>
 
-      {/* Team selector */}
+      {/* Team selector + Find Match button */}
       {myTeams.length > 0 && (
-        <div className="mb-6">
-          <label className="text-sm font-medium text-gray-700 mr-3">Active Team:</label>
-          <select
-            value={selectedTeam}
-            onChange={(e) => handleTeamChange(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+        <div className="flex items-center gap-4 mb-6 flex-wrap">
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-gray-700">Active Team:</label>
+            <select
+              value={selectedTeam}
+              onChange={(e) => handleTeamChange(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+            >
+              {myTeams.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={handleFindMatch}
+            disabled={finding}
+            className="flex items-center gap-2 bg-emerald-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition disabled:opacity-60"
           >
-            {myTeams.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
+            {finding ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Finding...
+              </>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                </svg>
+                Find Match
+              </>
+            )}
+          </button>
         </div>
       )}
 
@@ -98,8 +127,14 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Top 3 Suggested Opponents */}
-      {suggestions.length > 0 && (
+      {/* Top 3 Suggested Opponents — only shown after Find Match is clicked */}
+      {hasFetched && suggestions.length === 0 && (
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center mb-8">
+          <p className="text-gray-500">No suitable opponents found. Try again later.</p>
+        </div>
+      )}
+
+      {hasFetched && suggestions.length > 0 && (
         <section className="mb-8">
           <h2 className="text-lg font-bold text-gray-900 mb-4">Suggested Opponents</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
